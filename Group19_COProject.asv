@@ -1,0 +1,34 @@
+% QUESTION 1
+clear;
+clc;
+close all;
+
+% Load the ABP signal
+% Add the folder with the MATLAB functions
+addpath('PhysioToolkitCardiacOutput_MatlabCode/2analyze');
+
+% load the ABP text file
+ABP = load(fullfile('s00020', ...
+    's00020-2567-03-30-17-47_ABP.txt'));
+
+% Make ABP is a column vector
+ABP = ABP(:);
+
+% Sampling frequency
+Fs = 125;
+
+% Display information
+fprintf('Number of ABP samples: %d\n', length(ABP));
+fprintf('Recording duration %.2f hours\n', ...
+    length(ABP)/Fs/3600);
+
+% Detect heartbeats
+
+
+
+
+%[appendix]{"version":"1.0"}
+%---
+%[metadata:view]
+%   data: {"layout":"onright"}
+%---
