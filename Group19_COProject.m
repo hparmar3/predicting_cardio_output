@@ -3,13 +3,13 @@ clear;
 clc;
 close all;
 
-% Load the ABP signal
-% Add the folder with the MATLAB functions
+%%\ Load the ABP signal
+% Add the folder containing the MATLAB functions
 addpath('PhysioToolkitCardiacOutput_MatlabCode/2analyze');
 
-% load the ABP text file
-ABP = load(fullfile('s00020', ...
-    's00020-2567-03-30-17-47_ABP.txt'));
+% Select the patient's ABP txt file
+ABP = load(fullfile('s00020', ... %[output:group:3da88b52] %[output:31b921ce]
+    's00020-2567-03-30-17-47_ABP.txt')); %[output:group:3da88b52] %[output:31b921ce]
 
 % Make ABP is a column vector
 ABP = ABP(:);
@@ -17,34 +17,176 @@ ABP = ABP(:);
 % Sampling frequency
 Fs = 125;
 
-% Display information
-fprintf('Number of ABP samples: %d\n', length(ABP)); %[output:94efade5]
-fprintf('Recording duration %.2f hours\n', ... %[output:group:42840193] %[output:6e4d1d14]
-    length(ABP)/Fs/3600); %[output:group:42840193] %[output:6e4d1d14]
+% Display basic information
+fprintf('Number of ABP samples: %d\n', length(ABP));
+fprintf('Recording duration: %.2f hours\n', ...
+    length(ABP)/Fs/3600);
 
-% Detect heartbeats
-% Use the WABP algorithm
+%%\ Detect heartbeat onsets
+% Use the supplied WABP algorithm
 OnsetTimes = wabp(ABP);
-fprintf('Number of detected pulse onsets: %d\n', ... %[output:group:2024614b] %[output:676cb0f8]
-    length(OnsetTimes)); %[output:group:2024614b] %[output:676cb0f8]
 
-% Extract ABP waveform features
+fprintf('Number of detected pulse onsets: %d\n', ...
+    length(OnsetTimes));
+
+%%\ Extract ABP waveform features
 % Use the ABPFEATURE algorithm
+Features = abpfeature(ABP, OnsetTimes);
 
+% Feature columns:
+% 1  = Systolic time
+% 2  = Systolic pressure
+% 3  = Diastolic time
+% 4  = Diastolic pressure
+% 5  = Pulse pressure
+% 6  = Mean arterial pressure
+% 7  = Beat period
+% 8  = Mean negative derivative
+% 9  = End systole (0.3*sqrt(RR))
+% 10 = Systolic area (0.3*sqrt(RR))
+% 11 = End systole (minimum slope)
+% 12 = Systolic area (minimum slope)
 
+%%\ Evaluate signal quality
+% Use the JSQI algorithm
+[BeatQ, QualityRatio] = jSQI(Features, OnsetTimes, ABP);
+fprintf('Fraction of good beats: %.3f\n', QualityRatio);
 
+%%\ Select the two analysis periods
+StartHours = [10, 11];
+NumberOfPulses = 20;
+
+for k = 1:length(StartHours)
+    % Convert starting hour into sample number
+    StartSample = round(StartHours(k)*3600*Fs) + 1;
+
+    % Find the first detected onset
+    FirstBeat = find(OnsetTimes >= StartSample, 1, 'first');
+
+    if isempty(FirstBeat) || ...
+            FirstBeat + NumberOfPulses > length(OnsetTimes)
+        error('Not enough detected pulses at hour %d.', ...
+            StartHours(k));
+    end
+
+    % Select 20 complete pulses
+    BeatIndices = FirstBeat:(FirstBeat + NumberOfPulses - 1);
+
+    % Select 21 onset boundaries
+    SelectedOnsets = OnsetTimes( ...
+        FirstBeat:FirstBeat + NumberOfPulses);
+
+    % Waveform features
+    SelectedFeatures = Features(BeatIndices, :);
+
+    % Signal quality values
+    SelectedQuality = BeatQ(BeatIndices, 1);
+
+    %%\ Extract waveform segment
+    SegmentStart = SelectedOnsets(1);
+    SegmentEnd = SelectedOnsets(end);
+
+    ABPSegment = ABP(SegmentStart:SegmentEnd);
+
+    % Time in seconds
+    Time = (0:length(ABPSegment)-1)/Fs;
+
+    %%\ Extract feature locations
+    % Convert absolute sample positions to positions
+    SystolicTimes = SelectedFeatures(:,1) - SegmentStart + 1;
+    DiastolicTimes = SelectedFeatures(:,3) - SegmentStart + 1;
+
+    EndSystole1 = SelectedFeatures(:,9) - SegmentStart + 1;
+    EndSystole2 = SelectedFeatures(:,11) - SegmentStart + 1;
+
+    OnsetRelative = SelectedOnsets(1:end-1) ...
+        - SegmentStart + 1;
+
+    % Keep feature indices within the waveform
+    ValidSystolic = SystolicTimes >= 1 & ...
+        SystolicTimes <= length(ABPSegment);
+
+    ValidDiastolic = DiastolicTimes >= 1 & ...
+        DiastolicTimes <= length(ABPSegment);
+
+    ValidEnd1 = EndSystole1 >= 1 & ...
+        EndSystole1 <= length(ABPSegment);
+
+    ValidEnd2 = EndSystole2 >= 1 & ...
+        EndSystole2 <= length(ABPSegment);
+
+    %%\ Plot ABP waveform and features
+    figure;
+
+    plot(Time, ABPSegment, 'b-', 'LineWidth', 1.2);
+    hold on;
+
+    % Mark pulse onsets with *
+    plot(Time(OnsetRelative), ABPSegment(OnsetRelative), ...
+        'k*', 'MarkerSize', 7);
+
+    % Mark systolic peaks with ^
+    plot(Time(SystolicTimes(ValidSystolic)), ...
+        SelectedFeatures(ValidSystolic,2), ...
+        'r^', 'MarkerSize', 7, 'MarkerFaceColor', 'r');
+
+    % Mark diastolic points with v
+    plot(Time(DiastolicTimes(ValidDiastolic)), ...
+        SelectedFeatures(ValidDiastolic,4), ...
+        'bv', 'MarkerSize', 7, 'MarkerFaceColor', 'b');
+
+    % Mark end of systole using 0.3*sqrt(RR) with X
+    plot(Time(EndSystole1(ValidEnd1)), ...
+        ABPSegment(EndSystole1(ValidEnd1)), ...
+        'mx', 'MarkerSize', 9, 'LineWidth', 1.5);
+
+    % Mark end of systole using minimum slope with o
+    plot(Time(EndSystole2(ValidEnd2)), ...
+        ABPSegment(EndSystole2(ValidEnd2)), ...
+        'go', 'MarkerSize', 7, 'LineWidth', 1.5);
+
+    %%\ Label and format plot
+    xlabel('Time (seconds)');
+    ylabel('Arterial Blood Pressure (mmHg)');
+
+    title(sprintf('Patient s00020: First 20 ABP Pulses Starting at %d Hours', ...
+        StartHours(k)));
+
+    legend('ABP waveform', ...
+        'Pulse onset (*)', ...
+        'Systolic peak (^)', ...
+        'Diastolic point (v)', ...
+        'End systole: 0.3 sqrt(RR) (X)', ...
+        'End systole: minimum slope (o)', ...
+        'Location', 'best');
+
+    grid on;
+    box on;
+    hold off;
+
+    %%\ Save figure
+
+    OutputName = sprintf('ABP_patient20_%dhours.png', ...
+        StartHours(k));
+
+    saveas(gcf, OutputName);
+
+    fprintf('\nAnalysis at %d hours:\n', StartHours(k));
+    fprintf('Number of pulses plotted: %d\n', ...
+        NumberOfPulses);
+    fprintf('Good pulses: %d\n', ...
+        sum(~SelectedQuality));
+    fprintf('Bad pulses: %d\n', ...
+        sum(SelectedQuality));
+    fprintf('Figure saved as: %s\n', OutputName);
+
+end
 
 %[appendix]{"version":"1.0"}
 %---
 %[metadata:view]
-%   data: {"layout":"onright"}
+%   data: {"layout":"onright","rightPanelPercent":27.9}
 %---
-%[output:94efade5]
-%   data: {"dataType":"text","outputData":{"text":"Number of ABP samples: 14265000\n","truncated":false}}
-%---
-%[output:6e4d1d14]
-%   data: {"dataType":"text","outputData":{"text":"Recording duration 31.70 hours\n","truncated":false}}
-%---
-%[output:676cb0f8]
-%   data: {"dataType":"text","outputData":{"text":"Number of detected pulse onsets: 74977\n","truncated":false}}
+%[output:31b921ce]
+%   data: {"dataType":"error","outputData":{"errorType":"runtime","text":"Error using <a href=\"matlab:matlab.lang.internal.introspective.errorDocCallback('load')\" style=\"font-weight:bold\">load<\/a>\nUnable to find file or directory \"s00020\/s00020-2567-03-30-17-47_ABP.txt\"."}}
 %---
