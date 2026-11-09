@@ -66,29 +66,38 @@ figure(1);
 subplot(4,1,1);
 plot(t_CO,CO_cal); % continuous cardiac output (curve line)
 hold on;
-stem(time_TCO_valid,TCO_valid) % discrete TCO measurement (stem plots)
+stem(time_TCO_valid,TCO_valid,"filled",LineWidth = 1.0) % discrete TCO measurement (stem plots)
 xlabel('time (min)');
 ylabel('CO');
 
 subplot(4,1,2);
 plot(t_CO,PP);
 hold on;
-stem(time_TCO_valid,PP_TCO);
+stem(time_TCO_valid,PP_TCO,"filled", LineWidth = 1.0);
 xlabel('time (min)');
 ylabel('PP');
 
 subplot(4,1,3);
 plot(t_CO,MAP);
 hold on;
-stem(time_TCO_valid,MAP_TCO);
+stem(time_TCO_valid,MAP_TCO,"filled",LineWidth = 1.0);
 xlabel('time (min)');
 ylabel('MAP');
 
 subplot(4,1,4);
 plot(t_CO,HR);
 hold on;
-stem(time_TCO_valid,HR_TCO);
+stem(time_TCO_valid,HR_TCO,"filled",LineWidth = 1.0);
 xlabel('time (min)');
 ylabel('HR');
+
+% Resize the image to be taller
+fig = gcf;
+fig.Position(4) = fig.Position(4) + 120;
+
+% Add overall legend
+Lgnd = legend('continuous estimate curve', 'discrete TCO measurement');
+Lgnd.Position(1) = 0.7;
+Lgnd.Position(2) = 0.94;
 
 hold off;
