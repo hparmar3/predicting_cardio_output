@@ -1,4 +1,3 @@
-
 function [X, t, tau] = parlikarCO(ABP, onset, feat, beatq, Fs, windowSize)
 % Uncalibrated Parlikar cardiac output estimator.
 %
