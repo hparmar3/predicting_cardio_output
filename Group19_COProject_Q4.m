@@ -58,9 +58,6 @@ for p = 1:3
     r_1 = TCO(r_1_index);
     t_first_valid = time_TCO(r_1_index);
 
-    
-    
-
     %% Estimate and calibrate CO
 
     Colors = [0.0000 0.4470 0.7410;   % Blue: Liljestrand
@@ -86,6 +83,32 @@ for p = 1:3
         x_1 = median(CO(window));
         k = r_1/x_1;
         CO_cal = k*CO;
+
+        % Compare CO estimates with TCO measurements
+        CO_at_TCO = interp1(t_CO,CO_cal,time_TCO_valid,'linear',NaN);
+
+        % Exclude calibration point and missing estimates
+        valid = ~isnan(CO_at_TCO) & (time_TCO_valid ~= t_first_valid);
+        error = CO_at_TCO(valid) - TCO_valid(valid);
+
+        if isempty(error)
+            Bias = NaN;
+            RMSE = NaN;
+            MAE = NaN;
+            PercentageError = NaN;
+        else
+            Bias = mean(error);
+            RMSE = sqrt(mean(error.^2));
+            MAE = mean(abs(error));
+            PercentageError = mean(abs(error)./TCO_valid(valid))*100;
+        end
+
+        fprintf('%s - %s\n',Patients{p},EstimatorNames{a});
+        fprintf('Bias = %.3f\n',Bias);
+        fprintf('RMSE = %.3f\n',RMSE);
+        fprintf('MAE = %.3f\n',MAE);
+        fprintf('Percentage Error = %.2f%%\n\n',PercentageError);
+
 
         % Plot CO estimate
         plot(t_CO,CO_cal,'Color',Colors(a,:), 'LineWidth',0.5);
