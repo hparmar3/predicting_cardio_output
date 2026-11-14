@@ -9,7 +9,7 @@ addpath('PhysioToolkitCardiacOutput_MatlabCode/3estimate');
 
 Patients = {'s00020','s00138','s00214'};
 StartHours = [0,1,1];
-DurationHours = [12,1,1];
+DurationHours = [12,12,12];
 
 EstimatorIDs = [5,2,6];
 
@@ -60,15 +60,17 @@ for p = 1:3
 
     
     
+
     %% Estimate and calibrate CO
 
     Colors = [0.0000 0.4470 0.7410;   % Blue: Liljestrand
               0.1800 0.5500 0.3400;   % Green: Windkessel
-              0.4940 0.1840 0.5560];  % Purple: Herd
+              0.9290 0.6940 0.1250];  % Yellow: Herd
 
     EstimatorNames = {'Liljestrand','Windkessel','Herd'};
 
-    figure(p);
+    figure;
+    hold on;
 
     for a = 1:3
 
@@ -78,43 +80,36 @@ for p = 1:3
         % Time in minutes
         t_CO = t_CO + StartHours(p)*60;
 
-        %% C2 Calibration
-
+        % C2 calibration
         window = (t_CO > t_first_valid-1) & (t_CO <= t_first_valid);
 
         x_1 = median(CO(window));
-
         k = r_1/x_1;
         CO_cal = k*CO;
 
-        %% Plot CO and TCO
-
-        subplot(3,1,a);
-
-        plot(t_CO,CO_cal,'Color',Colors(a,:),'LineWidth',0.8);
-        hold on;
-
-        stem(time_TCO_valid,TCO_valid,'filled','Color',[0.8500 0.3250 0.0980],'LineWidth',1.0);
-
-        xlabel('time (min)');
-        ylabel('CO (L/min)');
-        title(EstimatorNames{a});
-
-        legend('continuous estimate curve','discrete TCO measurement','Location','best');
-
-        grid on;
-        hold off;
+        % Plot CO estimate
+        plot(t_CO,CO_cal,'Color',Colors(a,:), 'LineWidth',0.5);
 
     end
 
-    %% Figure title and size
+    % Plot discrete TCO measurements
+    stem(time_TCO_valid,TCO_valid,'filled', 'Color',[0.8500 0.3250 0.0980], 'LineWidth',1.0);
 
-    sgtitle(['Patient ',Patients{p},': CO Estimator Comparison']);
+    xlabel('time (min)');
+    ylabel('CO (L/min)');
+    title(['Patient ',Patients{p},': CO Estimator Comparison']);
+
+    xlim([0 700]);
+    xticks(0:100:700);
+
+    legend('Liljestrand','Windkessel','Herd', 'discrete TCO measurement','Location','best');
+
+    grid on;
 
     fig = gcf;
-    fig.Position(4) = 850;
+    fig.Position(4) = fig.Position(4) + 120;
 
-    %% Save figure
+    hold off;
 
     saveas(gcf,['Q4_CO_',Patients{p},'.png']);
 
