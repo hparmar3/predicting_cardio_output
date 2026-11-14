@@ -111,19 +111,19 @@ for p = 1:3
 
 
         % Plot CO estimate
-        plot(t_CO/60,CO_cal,'Color',Colors(a,:), 'LineWidth',0.5);
+        plot(t_CO,CO_cal,'Color',Colors(a,:), 'LineWidth',0.5);
 
     end
 
     % Plot discrete TCO measurements
-    stem(time_TCO_valid/60,TCO_valid,'filled', 'Color',[0.8500 0.3250 0.0980], 'LineWidth',1.0);
+    stem(time_TCO_valid,TCO_valid,'filled', 'Color',[0.8500 0.3250 0.0980], 'LineWidth',1.0);
 
     xlabel('time (min)');
     ylabel('CO (L/min)');
     title(['Patient ',Patients{p},': CO Estimator Comparison']);
 
-    xlim([0 12]);
-    xticks(0:2:12);
+    xlim([0,720]);
+    xticks(0:100:720);
 
     legend('Liljestrand','Windkessel','Herd', 'discrete TCO measurement','Location','best');
 
