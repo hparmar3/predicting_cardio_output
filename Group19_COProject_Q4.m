@@ -8,7 +8,7 @@ addpath('PhysioToolkitCardiacOutput_MatlabCode/2analyze');
 addpath('PhysioToolkitCardiacOutput_MatlabCode/3estimate');
 
 Patients = {'s00020','s00138','s00214'};
-StartHours = [0,1,1];
+StartHours = [0,0,0];
 DurationHours = [12,12,12];
 
 EstimatorIDs = [5,2,6];
@@ -85,7 +85,7 @@ for p = 1:3
         CO_cal = k*CO;
 
         % Compare CO estimates with TCO measurements
-        CO_at_TCO = interp1(t_CO,CO_cal,time_TCO_valid,'linear',NaN);
+        CO_at_TCO = interp1(t_CO,CO_cal,time_TCO_valid,'nearest',NaN);
 
         % Exclude calibration point and missing estimates
         valid = ~isnan(CO_at_TCO) & (time_TCO_valid ~= t_first_valid);
@@ -100,7 +100,7 @@ for p = 1:3
             Bias = mean(error);
             RMSE = sqrt(mean(error.^2));
             MAE = mean(abs(error));
-            PercentageError = mean(abs(error)./TCO_valid(valid))*100;
+            PercentageError = 100*std(error)/mean(TCO_valid(valid));
         end
 
         fprintf('%s - %s\n',Patients{p},EstimatorNames{a});
