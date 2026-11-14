@@ -72,8 +72,7 @@ for k = 1:length(StartHours) %[output:group:9902ab36]
     BeatIndices = FirstBeat:(FirstBeat + NumberOfPulses - 1);
 
     % Select 21 onset boundaries for the 20 pulses
-    SelectedOnsets = OnsetTimes( ...
-        FirstBeat:FirstBeat + NumberOfPulses);
+    SelectedOnsets = OnsetTimes(FirstBeat:FirstBeat + NumberOfPulses);
 
     % Corresponding waveform features
     SelectedFeatures = Features(BeatIndices, :);
@@ -166,15 +165,14 @@ for k = 1:length(StartHours) %[output:group:9902ab36]
     fprintf('\nAnalysis at %d hours:\n', StartHours(k)); %[output:7f87a650] %[output:9217b87f]
     fprintf('Number of pulses plotted: %d\n', NumberOfPulses); %[output:9dd16981] %[output:54bcdd76]
     fprintf('Good pulses: %d\n', sum(~SelectedQuality)); %[output:0e8694fc] %[output:2ab95a5a]
-    fprintf('Bad pulses: %d\n', sum(SelectedQuality)); %[output:82f73ab8] %[output:47470293]
-    fprintf('Figure saved as: %s\n', OutputName); %[output:1d615234] %[output:40021c7b]
+    fprintf('Bad pulses: %d\n', sum(SelectedQuality)); %[output:82f73ab8] %[output:1d615234] %[output:47470293] %[output:40021c7b]
 
 end %[output:group:9902ab36]
 
 %[appendix]{"version":"1.0"}
 %---
 %[metadata:view]
-%   data: {"layout":"onright","rightPanelPercent":32}
+%   data: {"layout":"onright","rightPanelPercent":25.4}
 %---
 %[output:0887d57d]
 %   data: {"dataType":"text","outputData":{"text":"Time between samples: 0.0080 seconds\n","truncated":false}}

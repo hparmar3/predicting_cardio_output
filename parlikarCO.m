@@ -56,19 +56,29 @@ DeltaP = diff(P_onset);
 % Parlikar equation, triangular pulse approximation
 PP = 2*(Pmean-DAP);
 
+% Identify good-qualtiy beats
+goodBeat = isfinite(beatq(:, 1)) & beatq(:, 1) == 0;
+
+% Exclude beat containing invalid ABP samples
+for i = 1:n
+    beatSignal = ABP(onset(i):onset(i+1) - 1);
+
+    if any(~isfinite(beatSignal)) || any(beatSignal <= 0) || any(beatSignal >= 300)
+        goodBeat(i) = false;
+    end
+end
+
 % Estimate 1/tau using moving-window least squares
 invTau = nan(n,1);
 halfWindow = floor(windowSize/2);
 
 for i = 1:n
-
     idx = max(1,i-halfWindow):min(n,i+halfWindow);
 
     A = Pmean(idx);
     b = (PP(idx)-DeltaP(idx))./T(idx);
 
-    valid = isfinite(A) & isfinite(b) & ...
-            isfinite(T(idx)) & T(idx)>0 & A>0;
+    valid = isfinite(A) & isfinite(b) & isfinite(T(idx)) & T(idx) > 0 & A > 0;
 
     if sum(valid) >= 3
         estimate = A(valid)\b(valid);
@@ -88,7 +98,7 @@ X = DeltaP./T + Pmean./tau;
 t = (onset(1:n)-onset(1))/(Fs*60);
 
 % Remove beats marked as poor quality by jSQI
-bad = beatq(:,1) ~= 0;
+bad = ~goodBeat;
 X(bad) = NaN;
 tau(bad) = NaN;
 
